@@ -25,4 +25,11 @@ def load_data(filename: str) -> npt.NDArray[np.float64]:
     return np.array(sheets)
 
 
+def display_sheet(sheet: npt.NDArray[np.float64]) -> None:
+    plt.imshow(sheet)
+    plt.show()
+
+
 data = load_data("data.csv")
+
+display_sheet(data[0])
