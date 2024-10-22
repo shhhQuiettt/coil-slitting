@@ -1,11 +1,17 @@
 from dataclasses import dataclass
 import numpy as np
+from copy import deepcopy
 import random
 from typing import Optional
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.sampling import Sampling
+from pymoo.core.crossover import Crossover
+from pymoo.core.mutation import Mutation
 from pymoo.problems.multi import ElementwiseProblem
+from pymoo.optimize import minimize
 
+
+POPULATION_SIZE = 10
 MAX_NUMBER_OF_SLITS = 10
 
 
@@ -15,6 +21,9 @@ class Slit:
     offset: float  # percentage of the width/height
     left_slit: Optional["Slit"]
     right_slit: Optional["Slit"]
+
+    def is_leaf(self) -> bool:
+        return self.left_slit is None and self.right_slit is None
 
 
 class SlicingTree:
@@ -31,11 +40,86 @@ class SlicingTree:
     def complexity(self) -> float:
         return 0
 
+    def __repr__(self):
+        return f"SlicingTree(number_of_slits={self.number_of_slits}, root={self.root is not None})"
+
     @classmethod
     def random(cls, max_number_of_slits: int) -> "SlicingTree":
-        no_of_slits = np.random.randint(0, max_number_of_slits)
+        no_of_slits = np.random.randint(1, max_number_of_slits)
         root = generate_random_slitting_tree_root(no_of_slits)
+
         return cls(no_of_slits, root)
+
+    def get_random_node(self) -> Optional[Slit]:
+        current = self.root
+        while current is not None:
+            if random.choice([True, False]):
+                current = current.left_slit
+            else:
+                current = current.right_slit
+
+            if random.random() < 0.2 or current is None:
+                return current
+
+    def get_random_leaf(self) -> Optional[Slit]:
+        current = self.root
+        while current is not None:
+            if current.left_slit is None and current.right_slit is None:
+                return current
+            if current.left_slit is None:
+                current = current.right_slit
+                continue
+
+            elif current.right_slit is None:
+                current = current.left_slit
+                continue
+
+            if random.choice([True, False]):
+                current = current.left_slit
+            else:
+                current = current.right_slit
+
+    def add_random_slit(self):
+        leaf = self.get_random_leaf()
+        if leaf is None:
+            return
+        if random.choice([True, False]):
+            leaf.left_slit = Slit(
+                horizontal=random.choice([True, False]),
+                offset=random.random(),
+                left_slit=None,
+                right_slit=None,
+            )
+        else:
+            leaf.right_slit = Slit(
+                horizontal=random.choice([True, False]),
+                offset=random.random(),
+                left_slit=None,
+                right_slit=None,
+            )
+
+    def remove_random_leaf(self):
+        current = self.root
+        if current is None:
+            return
+
+        cut_right = random.choice([True, False])
+        if cut_right and current.right_slit is None:
+            return
+        if not cut_right and current.left_slit is None:
+            return
+
+        while True:
+            if cut_right:
+                if current.right_slit.is_leaf():
+                    current.right_slit = None
+                    return
+            else:
+                if current.left_slit.is_leaf():
+                    current.left_slit = None
+                    return
+
+            current = current.right_slit
 
 
 # Objectives:
@@ -62,6 +146,8 @@ def generate_random_slitting_tree_root(size: int) -> Optional[Slit]:
     if size == 0:
         return None
 
+    size -= 1
+
     left_size = random.randint(0, size)
     right_size = size - left_size
 
@@ -80,3 +166,60 @@ class RandomSlicingTreeSampling(Sampling):
         for i in range(n_samples):
             # doesnt include minimal rectangle size
             X[i, 0] = SlicingTree.random(MAX_NUMBER_OF_SLITS)
+
+        return X
+
+
+class SwapSubtreeCrossover(Crossover):
+    def __init__(self):
+        super().__init__(2, 2)
+
+    def _do(self, problem, X, **kwargs):
+        _, n_matings, n_var = X.shape
+        Y = np.full_like(X, None, dtype=object)
+        for k in range(n_matings):
+            parent1, parent2 = X[0, k], X[1, k]
+            # swap random subtrees
+            child1 = deepcopy(parent1)
+            child2 = deepcopy(parent2)
+
+            node1 = child1.get_random_node()
+            node2 = child2.get_random_node()
+
+            if node1 is not None and node2 is not None:
+                node1.left_slit, node2.left_slit = node2.left_slit, node1.left_slit
+                node1.right_slit, node2.right_slit = node2.right_slit, node1.right_slit
+
+            Y[0, k], Y[1, k] = child1, child2
+
+        return Y
+
+
+class AddSlittingAndNudgeMutation(Mutation):
+    def __init__(self):
+        super().__init__()
+
+    def _do(self, problem, X, **kwargs):
+        for i in range(X.shape[0]):
+            node = X[i, 0].get_random_node()
+            if node is not None:
+                node.offset += np.random.normal(0, 0.2)
+                node.offset = max(0, min(1, node.offset))
+
+            if random.random() < 0.5:
+                X[i, 0].add_random_slit()
+            else:
+                X[i, 0].remove_random_slit()
+
+        return X
+
+
+if __name__ == "__main__":
+    problem = CoilSlitting(max_rectangle_size=-1, min_rectangle_size=-1)
+    algorithm = NSGA2(
+        pop_size=POPULATION_SIZE,
+        sampling=RandomSlicingTreeSampling(),
+        crossover=SwapSubtreeCrossover(),
+        mutation=AddSlittingAndNudgeMutation(),
+    )
+    res = minimize(problem, algorithm, ("n_gen", 2), seed=0xC0FFEE)
