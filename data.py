@@ -30,6 +30,7 @@ def display_sheet(sheet: npt.NDArray[np.float64]) -> None:
     plt.show()
 
 
-data = load_data("data.csv")
-
-display_sheet(data[0])
+if __name__ == "__main__":
+    data = load_data("data.csv")
+    for i in range(len(data)):
+        display_sheet(data[i])
