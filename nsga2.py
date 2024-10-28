@@ -8,8 +8,6 @@ from slicing_tree import (
 import numpy as np
 from copy import deepcopy
 import random
-from typing import Optional
-from numpy._typing import ArrayLike
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.sampling import Sampling
 from pymoo.core.crossover import Crossover
@@ -19,8 +17,8 @@ from pymoo.optimize import minimize
 from pymoo.core.duplicate import NoDuplicateElimination
 from anytree import NodeMixin
 
-POPULATION_SIZE = 10
-MAX_NUMBER_OF_SLITS = 10
+POPULATION_SIZE = 1000
+MAX_NUMBER_OF_SLITS = 20
 
 
 # Objectives:
@@ -80,6 +78,7 @@ class SwapSubtreeCrossover(Crossover):
         Y = np.full_like(X, None, dtype=object)
         for k in range(n_matings):
             parent1, parent2 = X[0, k, 0], X[1, k, 0]
+
             child1 = deepcopy(parent1)
             child2 = deepcopy(parent2)
 
@@ -109,5 +108,5 @@ if __name__ == "__main__":
         crossover=SwapSubtreeCrossover(),
         mutation=AddSlittingAndNudgeMutation(),
     )
-    res = minimize(problem, algorithm, ("n_gen", 2), seed=0xC0FFEE)
-    print(res.F)
+    res = minimize(problem, algorithm, ("n_gen", 100), seed=0xC0FFEE, verbose=True)
+    print(res.X)

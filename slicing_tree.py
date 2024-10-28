@@ -9,6 +9,9 @@ class Slit(NodeMixin):
     horizontal: bool
     offset: float  # percentage of the width/height
 
+    def __repr__(self) -> str:
+        return f"Slit(horizontal={self.horizontal}, offset={self.offset}, size={self.size})"
+
 
 @dataclass
 class Rectangle:
