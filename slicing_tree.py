@@ -1,8 +1,11 @@
 from dataclasses import dataclass
+import matplotlib.pyplot as plt
 import numpy.typing as npt
 import random
 from typing import Any
-from anytree import NodeMixin
+from anytree import NodeMixin, RenderTree
+from anytree.exporter import DotExporter
+import tempfile
 
 
 @dataclass
@@ -11,7 +14,7 @@ class Slit(NodeMixin):
     offset: float  # percentage of the width/height
 
     def __repr__(self) -> str:
-        return f"Slit(horizontal={self.horizontal}, offset={self.offset}, size={self.size})"
+        return f"Slit(horizontal={self.horizontal}, offset={self.offset:.2f}, size={self.size})"
 
 
 @dataclass
@@ -111,3 +114,20 @@ def average_variance(
     return sum(rectangle.sensors_variance() for rectangle in rectangles) / len(
         rectangles
     )
+
+
+def plot_slicing_tree(tree: Slit):
+    # print tree
+    print(RenderTree(tree))
+    with tempfile.NamedTemporaryFile(suffix=".png") as dot_output:
+        DotExporter(
+            tree,
+            nodenamefunc=lambda node: f"{'H' if node.horizontal else 'V'}  {node.offset:.8f}",
+        ).to_picture(dot_output.name)
+        # display with matplotlib
+        plt.imshow(plt.imread(dot_output.name))
+        plt.show()
+
+
+example_tree = generate_random_slitting_tree(10)
+plot_slicing_tree(example_tree)
