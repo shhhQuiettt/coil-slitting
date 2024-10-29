@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import numpy.typing as npt
 import random
 from typing import Any
 from anytree import NodeMixin
@@ -17,7 +18,10 @@ class Slit(NodeMixin):
 class Rectangle:
     width: float
     height: float
-    sensors: Any
+    sensors: npt.NDArray
+
+    def sensors_variance(self) -> float:
+        return self.sensors.var()
 
 
 def generate_random_slitting_tree(size: int) -> Slit:
@@ -54,7 +58,12 @@ def swap_random_subtree(tree1: Slit, tree2: Slit) -> None:
     node1.parent, node2.parent = node2.parent, node1.parent
 
 
-def get_rectangles(node: Slit, width: float, height: float) -> list[Rectangle]:
+def get_rectangles(
+    node: Slit,
+    width: float,
+    height: float,
+    sensors_sheet: npt.NDArray,
+) -> list[Rectangle]:
 
     height1 = height * node.offset if node.horizontal else height
     height2 = height - height1 if node.horizontal else height
@@ -63,23 +72,42 @@ def get_rectangles(node: Slit, width: float, height: float) -> list[Rectangle]:
     width2 = width - width1 if not node.horizontal else width
 
     if not node.children:
+
         return [
-            Rectangle(width1, height1, None),
-            Rectangle(width2, height2, None),
+            # what about sensors on the edge?
+            Rectangle(width1, height1, sensors_sheet[: int(width1), : int(height1)]),
+            Rectangle(width2, height2, sensors_sheet[int(width1) :, int(height1) :]),
         ]
 
-    rectangles_children1 = get_rectangles(node.children[0], width1, height1)
+    rectangles_children1 = get_rectangles(
+        node.children[0], width1, height1, sensors_sheet[: int(width1), : int(height1)]
+    )
 
     if len(node.children) == 1:
         return rectangles_children1
 
-    rectangles_children2 = get_rectangles(node.children[1], width2, height2)
+    rectangles_children2 = get_rectangles(
+        node.children[1], width2, height2, sensors_sheet[int(width1) :, int(height1) :]
+    )
 
     return rectangles_children1 + rectangles_children2
 
 
-def average_rectangle_size(tree: Slit, sheet_width: int, sheet_height: int) -> float:
-    rectangles = get_rectangles(tree, sheet_width, sheet_height)
+def average_rectangle_size(
+    tree: Slit, sheet_width: int, sheet_height: int, sensors_sheet: npt.NDArray
+) -> float:
+    rectangles = get_rectangles(tree, sheet_width, sheet_height, sensors_sheet)
     return sum(rectangle.width * rectangle.height for rectangle in rectangles) / len(
+        rectangles
+    )
+
+
+def average_variance(
+    tree: Slit, sheet_width: int, sheet_height: int, sensors_sheet: npt.NDArray
+):
+    rectangles = get_rectangles(tree, sheet_width, sheet_height, sensors_sheet)
+
+    variances = [rectangle.sensors_variance() for rectangle in rectangles]
+    return sum(rectangle.sensors_variance() for rectangle in rectangles) / len(
         rectangles
     )

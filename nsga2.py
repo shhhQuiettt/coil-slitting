@@ -1,9 +1,11 @@
 from dataclasses import dataclass
+import numpy.typing as npt
 from slicing_tree import (
     Slit as SlicingTree,
     generate_random_slitting_tree,
     swap_random_subtree,
     average_rectangle_size,
+    average_variance,
 )
 import numpy as np
 from copy import deepcopy
@@ -16,8 +18,10 @@ from pymoo.problems.multi import ElementwiseProblem
 from pymoo.optimize import minimize
 from pymoo.core.duplicate import NoDuplicateElimination
 from anytree import NodeMixin
+from data import load_data
 
 POPULATION_SIZE = 1000
+GENERATIONS = 10
 MAX_NUMBER_OF_SLITS = 20
 
 
@@ -34,22 +38,32 @@ class CoilSlitting(ElementwiseProblem):
         sheet_height: int,
         max_rectangle_size: float,
         min_rectangle_size: float,
+        sensors_sheet: npt.NDArray,
     ):
         self.max_rectangle_size = max_rectangle_size
         self.min_rectangle_size = min_rectangle_size
         self.sheet_width = sheet_width
         self.sheet_height = sheet_height
+        self.sensors_sheet = sensors_sheet
+
         # TODO: Change n_obj
-        super().__init__(n_var=1, n_obj=2, n_constr=0, type=SlicingTree)
+        # n_var: number of variales in single genotype is 1 slicing tree
+        super().__init__(n_var=1, n_obj=3, n_constr=0, type=SlicingTree)
 
     def _evaluate(self, slitting: list[SlicingTree], out, *args, **kwargs):
         f1 = slitting[0].size
-        f2 = average_rectangle_size(slitting[0], self.sheet_width, self.sheet_height)
-        # f3 = slitting[0].average_slit_quality()
+        f2 = average_rectangle_size(
+            slitting[0], self.sheet_width, self.sheet_height, self.sensors_sheet
+        )
+        f3 = average_variance(
+            slitting[0], self.sheet_width, self.sheet_height, self.sensors_sheet
+        )
+        print(f3)
         # f4 = slitting[0].complexity()
 
         # out["F"] = np.column_stack([f1, -f2, -f3, f4])
-        out["F"] = np.column_stack([f1, -f2])
+        out["F"] = np.column_stack([f1, -f2, -f3])
+        # out["F"] = np.column_stack([f1, -f2])
 
 
 class RandomSlicingTreeSampling(Sampling):
@@ -98,8 +112,15 @@ class AddSlittingAndNudgeMutation(Mutation):
 
 
 if __name__ == "__main__":
+
+    single_sheet = load_data("./data.csv")[0]
+
     problem = CoilSlitting(
-        max_rectangle_size=-1, min_rectangle_size=-1, sheet_width=100, sheet_height=100
+        max_rectangle_size=-1,
+        min_rectangle_size=-1,
+        sheet_width=100,
+        sheet_height=100,
+        sensors_sheet=single_sheet,
     )
     algorithm = NSGA2(
         pop_size=POPULATION_SIZE,
@@ -108,5 +129,7 @@ if __name__ == "__main__":
         crossover=SwapSubtreeCrossover(),
         mutation=AddSlittingAndNudgeMutation(),
     )
-    res = minimize(problem, algorithm, ("n_gen", 100), seed=0xC0FFEE, verbose=True)
+    res = minimize(
+        problem, algorithm, ("n_gen", GENERATIONS), seed=0xC0FFEE, verbose=True
+    )
     print(res.X)
