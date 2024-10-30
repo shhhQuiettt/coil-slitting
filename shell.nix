@@ -8,6 +8,7 @@ in pkgs.mkShell {
       python-pkgs.numpy
       python-pkgs.seaborn
       python-pkgs.anytree
+      python-pkgs.opencv4
     ]))
   ];
 }

@@ -26,8 +26,17 @@ class Slit(NodeMixin):
 
 # class to represent the end node, to know if a subrectangle is left or right
 class EndNode(NodeMixin):
+    # for some reason to display graph with graphviz
+    # every node shoul have unique identifier that ALSO is what is displayed
+    count = 0
+
+    def __init__(self):
+        self.count = EndNode.count + 1
+        EndNode.count += 1
+        super().__init__()
+
     def __str__(self) -> str:
-        return "END"
+        return f"END{self.count}"
 
 
 @dataclass
