@@ -1,11 +1,15 @@
 from dataclasses import dataclass
+import numpy as np
+from data import load_data
 import matplotlib.pyplot as plt
 import numpy.typing as npt
 import random
 from typing import Any
-from anytree import NodeMixin, RenderTree
+from anytree import NodeMixin, PreOrderIter, RenderTree, AnyNode
 from anytree.exporter import DotExporter
 import tempfile
+import cv2
+from queue import Queue
 
 
 @dataclass
@@ -15,6 +19,15 @@ class Slit(NodeMixin):
 
     def __repr__(self) -> str:
         return f"Slit(horizontal={self.horizontal}, offset={self.offset:.2f}, size={self.size})"
+
+    def __str__(self) -> str:
+        return f"{'H' if self.horizontal else 'V'}  {self.offset:.3f}"
+
+
+# class to represent the end node, to know if a subrectangle is left or right
+class EndNode(NodeMixin):
+    def __str__(self) -> str:
+        return "END"
 
 
 @dataclass
@@ -41,9 +54,14 @@ def generate_random_slitting_tree(size: int) -> Slit:
         children_left = (generate_random_slitting_tree(left_size),)
         children += children_left
 
+    else:
+        children.append(EndNode())
+
     if right_size > 0:
         children_right = (generate_random_slitting_tree(right_size),)
         children += children_right
+    else:
+        children.append(EndNode())
 
     node = Slit(
         horizontal=random.choice([True, False]),
@@ -122,12 +140,46 @@ def plot_slicing_tree(tree: Slit):
     with tempfile.NamedTemporaryFile(suffix=".png") as dot_output:
         DotExporter(
             tree,
-            nodenamefunc=lambda node: f"{'H' if node.horizontal else 'V'}  {node.offset:.8f}",
+            nodenamefunc=lambda node: str(node),
         ).to_picture(dot_output.name)
-        # display with matplotlib
         plt.imshow(plt.imread(dot_output.name))
         plt.show()
 
 
+def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
+    # rectangles = get_rectangles(tree, 100, 100, sensors_sheet)
+
+    image = sensors_sheet.copy()
+    # image = np.pad(image, 5)
+
+    range_h = [0, sensors_sheet.shape[0]]
+    range_v = [0, sensors_sheet.shape[1]]
+
+    range_h_stack = Queue()
+    range_v_stack = Queue()
+
+    for slit in PreOrderIter(tree):
+        if slit.horizontal:
+            range_h_stack.put(range_h)
+            range_h = [range_h[0], int(slit.offset * range_h[1])]
+        else:
+            range_v_stack.put(range_v)
+            range_v = [range_v[0], int(slit.offset * range_v[1])]
+
+    for slit in PreOrderIter(tree):
+        if slit.horizontal:
+            line_x = int(slit.offset * range_h[1])
+            image[line_x, :] = 0
+
+        else:
+            line_y = int(slit.offset * range_v[1])
+            # image[:, line_y] =
+
+    plt.imshow(image)
+    plt.show()
+
+
 example_tree = generate_random_slitting_tree(10)
+sheet = load_data("./data.csv")[0]
+# plot_slits(example_tree, sheet)
 plot_slicing_tree(example_tree)
