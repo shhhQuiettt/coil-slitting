@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 import numpy as np
+from pymoo.util.nds.efficient_non_dominated_sort import efficient_non_dominated_sort
 from data import load_data
 import matplotlib.pyplot as plt
 import numpy.typing as npt
 import random
 from typing import Any
-from anytree import NodeMixin, PreOrderIter, RenderTree, AnyNode
+from anytree import NodeMixin, PreOrderIter
 from anytree.exporter import DotExporter
 import tempfile
 import cv2
@@ -94,6 +95,8 @@ def get_rectangles(
     height: float,
     sensors_sheet: npt.NDArray,
 ) -> list[Rectangle]:
+    if isinstance(node, EndNode):
+        return []
 
     height1 = height * node.offset if node.horizontal else height
     height2 = height - height1 if node.horizontal else height
@@ -144,8 +147,6 @@ def average_variance(
 
 
 def plot_slicing_tree(tree: Slit):
-    # print tree
-    print(RenderTree(tree))
     with tempfile.NamedTemporaryFile(suffix=".png") as dot_output:
         DotExporter(
             tree,
@@ -168,6 +169,9 @@ def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
     range_v_stack = Queue()
 
     for slit in PreOrderIter(tree):
+        if isinstance(slit, EndNode):
+            continue
+
         if slit.horizontal:
             range_h_stack.put(range_h)
             range_h = [range_h[0], int(slit.offset * range_h[1])]
@@ -176,6 +180,9 @@ def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
             range_v = [range_v[0], int(slit.offset * range_v[1])]
 
     for slit in PreOrderIter(tree):
+        if isinstance(slit, EndNode):
+            continue
+
         if slit.horizontal:
             line_x = int(slit.offset * range_h[1])
             image[line_x, :] = 0
@@ -188,7 +195,15 @@ def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
     plt.show()
 
 
-example_tree = generate_random_slitting_tree(10)
-sheet = load_data("./data.csv")[0]
-# plot_slits(example_tree, sheet)
-plot_slicing_tree(example_tree)
+if __name__ == "__main__":
+    example_tree = generate_random_slitting_tree(3)
+
+    np.random.seed(1)
+    print(np.random.random((100, 100)))
+    for r in get_rectangles(example_tree, 100, 100, np.random.random((100, 100))):
+        print(r.width, r.height)
+        print(r.sensors)
+        print()
+    # sheet = load_data("./data.csv")[0]
+    # plot_slits(example_tree, sheet)
+    # plot_slicing_tree(example_tree)
