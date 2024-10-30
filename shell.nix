@@ -7,6 +7,7 @@ in pkgs.mkShell {
       python-pkgs.matplotlib
       python-pkgs.numpy
       python-pkgs.seaborn
+      python-pkgs.anytree
     ]))
   ];
 }
