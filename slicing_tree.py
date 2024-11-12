@@ -89,6 +89,7 @@ def swap_random_subtree(tree1: Slit, tree2: Slit) -> None:
     node1.parent, node2.parent = node2.parent, node1.parent
 
 
+# TODO: return np.array
 def get_rectangles(
     node: Slit,
     width: float,
@@ -146,6 +147,21 @@ def average_variance(
     )
 
 
+def worst_percentile(
+    tree: Slit, *, sensors_sheet: npt.NDArray, percentile: float = 0.95
+) -> float:
+    rectangles = get_rectangles(
+        tree, sensors_sheet.shape[0], sensors_sheet.shape[1], sensors_sheet
+    )
+
+    percentiles = np.array(
+        [np.percentile(rectangle.sensors, percentile) for rectangle in rectangles]
+    )
+    areas = np.array([rectangle.width * rectangle.height for rectangle in rectangles])
+
+    return np.sum(percentiles * areas) / np.sum(areas)
+
+
 def plot_slicing_tree(tree: Slit):
     with tempfile.NamedTemporaryFile(suffix=".png") as dot_output:
         DotExporter(
@@ -196,14 +212,14 @@ def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
 
 
 if __name__ == "__main__":
-    example_tree = generate_random_slitting_tree(3)
+    example_tree = generate_random_slitting_tree(10)
 
     np.random.seed(1)
-    print(np.random.random((100, 100)))
-    for r in get_rectangles(example_tree, 100, 100, np.random.random((100, 100))):
-        print(r.width, r.height)
-        print(r.sensors)
-        print()
+    # print(np.random.random((100, 100)))
+    # for r in get_rectangles(example_tree, 100, 100, np.random.random((100, 100))):
+    #     print(r.width, r.height)
+    #     print(r.sensors)
+    #     print()
     # sheet = load_data("./data.csv")[0]
     # plot_slits(example_tree, sheet)
-    # plot_slicing_tree(example_tree)
+    plot_slicing_tree(example_tree)
