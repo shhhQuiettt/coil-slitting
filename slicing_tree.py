@@ -14,7 +14,6 @@ class Slit(NodeMixin):
     horizontal: bool
     offset: float  # percentage of the width/height
     # offset: int  # absolute value
-    slitted_sheet: npt.NDArray
 
     def __repr__(self) -> str:
         return f"Slit(horizontal={self.horizontal}, offset={self.offset:.2f}, size={self.size})"
@@ -38,33 +37,27 @@ class EndNode(NodeMixin):
         return f"END{self.count}"
 
 
-# @dataclass
-# class Rectangle:
-#     sensors: npt.NDArray
+@dataclass
+class Rectangle:
+    sensors: npt.NDArray
 
-#     def sensors_variance(self) -> float:
-#         return self.sensors.var()
+    def sensors_variance(self) -> float:
+        return self.sensors.var()
 
-#     @property
-#     def width(self) -> int:
-#         return self.sensors.shape[0]
+    @property
+    def width(self) -> int:
+        return self.sensors.shape[0]
 
-#     @property
-#     def height(self) -> int:
-#         return self.sensors.shape[1]
+    @property
+    def height(self) -> int:
+        return self.sensors.shape[1]
 
 
 def generate_random_slitting_tree(
-    *,
     size: int,
-    min_rectangle_width: int,
-    min_rectangle_height: int,
-    sensors_sheet: npt.NDArray,
 ) -> Slit:
     if size == 1:
-        # return Slit(horizontal=random.choice([True, False]), offset=random.random())
-        horizontal = random.choice([True, False])
-
+        return Slit(horizontal=random.choice([True, False]), offset=random.random())
         # return Slit()
 
     size -= 1
@@ -226,7 +219,7 @@ def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
 if __name__ == "__main__":
     example_tree = generate_random_slitting_tree(10)
 
-    np.random.seed(1)
+    # np.random.seed(1)
     # print(np.random.random((100, 100)))
     # for r in get_rectangles(example_tree, 100, 100, np.random.random((100, 100))):
     #     print(r.width, r.height)
