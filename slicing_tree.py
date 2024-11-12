@@ -239,7 +239,5 @@ if __name__ == "__main__":
     # plot_slicing_tree(example_tree)
     # print(get_rectangles(example_tree, sheet))
 
-    print(np.sum(sheet))
-    rectangles = get_rectangles(example_tree, sheet)
-    print(np.sum([r.sensors.sum() for r in rectangles]))
-    # print(average_weighted_worst_percentile(example_tree, sensors_sheet=sheet))
+    print(average_weighted_worst_percentile(example_tree, sensors_sheet=sheet))
+    print(average_rectangle_size(example_tree, sensors_sheet=sheet))
