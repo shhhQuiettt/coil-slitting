@@ -56,18 +56,11 @@ class CoilSlitting(ElementwiseProblem):
 
 class RandomSlicingTreeSampling(Sampling):
     def _do(self, problem, n_samples, **kwargs):
-        # X = np.full((n_samples, 1), None, dtype=object)
-
-        # for individual_id in range(n_samples):
-        #     # doesnt include minimal rectangle size
-        #     X[individual_id, 0] = SlicingTree.random(MAX_NUMBER_OF_SLITS)
         X = np.array(
             [
                 (
                     generate_random_slitting_tree(
                         size=random.randint(2, problem.max_number_of_slits),
-                        min_rectangle_width=problem.min_rectanle_width,
-                        min_rectangle_height=problem.min_rectanle_height,
                     ),
                 )
                 for _ in range(n_samples)
@@ -112,14 +105,10 @@ if __name__ == "__main__":
     sheet_width = 100
     sheet_height = 100
 
-    max_rectangle_width = 0.2 * sheet_width
-    max_rectangle_height = 0.2 * sheet_height
+    min_rectangle_width = 0.2 * sheet_width
+    min_rectangle_height = 0.2 * sheet_height
 
     problem = CoilSlitting(
-        max_rectangle_size=-1,
-        min_rectangle_size=-1,
-        sheet_width=100,
-        sheet_height=100,
         sensors_sheet=single_sheet,
     )
     algorithm = NSGA2(
