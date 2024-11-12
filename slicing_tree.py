@@ -1,15 +1,11 @@
 from dataclasses import dataclass
 import numpy as np
-from pymoo.util.nds.efficient_non_dominated_sort import efficient_non_dominated_sort
-from data import load_data
 import matplotlib.pyplot as plt
 import numpy.typing as npt
 import random
-from typing import Any
 from anytree import NodeMixin, PreOrderIter
 from anytree.exporter import DotExporter
 import tempfile
-import cv2
 from queue import Queue
 
 
@@ -42,12 +38,18 @@ class EndNode(NodeMixin):
 
 @dataclass
 class Rectangle:
-    width: float
-    height: float
     sensors: npt.NDArray
 
     def sensors_variance(self) -> float:
         return self.sensors.var()
+
+    @property
+    def width(self) -> int:
+        return self.sensors.shape[0]
+
+    @property
+    def height(self) -> int:
+        return self.sensors.shape[1]
 
 
 def generate_random_slitting_tree(size: int) -> Slit:
@@ -92,56 +94,57 @@ def swap_random_subtree(tree1: Slit, tree2: Slit) -> None:
 # TODO: return np.array
 def get_rectangles(
     node: Slit,
-    width: float,
-    height: float,
     sensors_sheet: npt.NDArray,
 ) -> list[Rectangle]:
     if isinstance(node, EndNode):
         return []
 
-    height1 = height * node.offset if node.horizontal else height
-    height2 = height - height1 if node.horizontal else height
-
-    width1 = width * node.offset if not node.horizontal else width
-    width2 = width - width1 if not node.horizontal else width
+    height, width = sensors_sheet.shape
+    horizontal_split_height = node.offset if node.horizontal else height
+    vertical_split_width = width * node.offset if not node.horizontal else width
 
     if not node.children:
 
         return [
             # what about sensors on the edge?
-            Rectangle(width1, height1, sensors_sheet[: int(width1), : int(height1)]),
-            Rectangle(width2, height2, sensors_sheet[int(width1) :, int(height1) :]),
+            Rectangle(
+                sensors_sheet[
+                    : int(vertical_split_width), : int(horizontal_split_height)
+                ]
+            ),
+            Rectangle(
+                sensors_sheet[
+                    int(vertical_split_width) :, int(horizontal_split_height) :
+                ]
+            ),
         ]
 
     rectangles_children1 = get_rectangles(
-        node.children[0], width1, height1, sensors_sheet[: int(width1), : int(height1)]
+        node.children[0],
+        sensors_sheet[: int(vertical_split_width), : int(horizontal_split_height)],
     )
 
     if len(node.children) == 1:
         return rectangles_children1
 
     rectangles_children2 = get_rectangles(
-        node.children[1], width2, height2, sensors_sheet[int(width1) :, int(height1) :]
+        node.children[1],
+        sensors_sheet[int(vertical_split_width) :, int(horizontal_split_height) :],
     )
 
     return rectangles_children1 + rectangles_children2
 
 
-def average_rectangle_size(
-    tree: Slit, sheet_width: int, sheet_height: int, sensors_sheet: npt.NDArray
-) -> float:
-    rectangles = get_rectangles(tree, sheet_width, sheet_height, sensors_sheet)
+def average_rectangle_size(tree: Slit, sensors_sheet: npt.NDArray) -> float:
+    rectangles = get_rectangles(tree, sensors_sheet)
     return sum(rectangle.width * rectangle.height for rectangle in rectangles) / len(
         rectangles
     )
 
 
-def average_variance(
-    tree: Slit, sheet_width: int, sheet_height: int, sensors_sheet: npt.NDArray
-):
-    rectangles = get_rectangles(tree, sheet_width, sheet_height, sensors_sheet)
+def average_variance(tree: Slit, sensors_sheet: npt.NDArray):
+    rectangles = get_rectangles(tree, sensors_sheet)
 
-    variances = [rectangle.sensors_variance() for rectangle in rectangles]
     return sum(rectangle.sensors_variance() for rectangle in rectangles) / len(
         rectangles
     )
@@ -150,9 +153,7 @@ def average_variance(
 def worst_percentile(
     tree: Slit, *, sensors_sheet: npt.NDArray, percentile: float = 0.95
 ) -> float:
-    rectangles = get_rectangles(
-        tree, sensors_sheet.shape[0], sensors_sheet.shape[1], sensors_sheet
-    )
+    rectangles = get_rectangles(tree, sensors_sheet)
 
     percentiles = np.array(
         [np.percentile(rectangle.sensors, percentile) for rectangle in rectangles]
