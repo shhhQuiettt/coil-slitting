@@ -13,6 +13,8 @@ from queue import Queue
 class Slit(NodeMixin):
     horizontal: bool
     offset: float  # percentage of the width/height
+    # offset: int  # absolute value
+    # slitted_sheet: npt.NDArray
 
     def __repr__(self) -> str:
         return f"Slit(horizontal={self.horizontal}, offset={self.offset:.2f}, size={self.size})"
@@ -52,9 +54,18 @@ class Rectangle:
         return self.sensors.shape[1]
 
 
-def generate_random_slitting_tree(size: int) -> Slit:
+def generate_random_slitting_tree(
+    *,
+    size: int,
+    min_rectangle_width: int,
+    min_rectangle_height: int,
+    sensors_sheet: npt.NDArray,
+) -> Slit:
     if size == 1:
-        return Slit(horizontal=random.choice([True, False]), offset=random.random())
+        # return Slit(horizontal=random.choice([True, False]), offset=random.random())
+        horizontal = random.choice([True, False])
+
+        # return Slit()
 
     size -= 1
 
@@ -150,7 +161,7 @@ def average_variance(tree: Slit, sensors_sheet: npt.NDArray):
     )
 
 
-def worst_percentile(
+def average_weighted_worst_percentile(
     tree: Slit, *, sensors_sheet: npt.NDArray, percentile: float = 0.95
 ) -> float:
     rectangles = get_rectangles(tree, sensors_sheet)

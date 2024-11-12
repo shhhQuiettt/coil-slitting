@@ -5,7 +5,7 @@ from slicing_tree import (
     generate_random_slitting_tree,
     swap_random_subtree,
     average_rectangle_size,
-    average_variance,
+    average_weighted_worst_percentile,
 )
 import numpy as np
 from copy import deepcopy
@@ -26,33 +26,32 @@ MAX_NUMBER_OF_SLITS = 20
 
 
 # Objectives:
-# 1. Minimize the number of slits
-# 2. Maximize the average size of the slits
-# 3. Maximize the average quality of the slits
-# 4. Minimize the complexity of the slits
+# 1. Minimise the average weighted 95 percentile
+# 2. Maximise the average size of the rectangles
 class CoilSlitting(ElementwiseProblem):
     def __init__(
         self,
         *,
-        max_rectangle_size: float,
-        min_rectangle_size: float,
         sensors_sheet: npt.NDArray,
     ):
-        self.max_rectangle_size = max_rectangle_size
-        self.min_rectangle_size = min_rectangle_size
         self.sensors_sheet = sensors_sheet
+
+        sheet_width, sheet_height = sensors_sheet.shape
+
+        self.min_rectanle_width = int(0.2 * sheet_width)
+        self.min_rectanle_height = int(0.2 * sheet_height)
+
+        self.max_number_of_slits = 5 * 5  # 20% width and height
 
         super().__init__(n_var=1, n_obj=2, n_constr=0, type=SlicingTree)
 
     def _evaluate(self, slitting: list[SlicingTree], out, *args, **kwargs):
-        f1 = slitting[0].size
-        f2 = average_rectangle_size(
-            slitting[0], self.sheet_width, self.sheet_height, self.sensors_sheet
+        f1 = average_weighted_worst_percentile(
+            slitting[0], sensors_sheet=self.sensors_sheet
         )
+        f2 = average_rectangle_size(slitting[0], self.sensors_sheet)
 
-        # out["F"] = np.column_stack([f1, -f2, -f3, f4])
         out["F"] = np.column_stack([f1, -f2])
-        # out["F"] = np.column_stack([f1, -f2])
 
 
 class RandomSlicingTreeSampling(Sampling):
@@ -64,7 +63,13 @@ class RandomSlicingTreeSampling(Sampling):
         #     X[individual_id, 0] = SlicingTree.random(MAX_NUMBER_OF_SLITS)
         X = np.array(
             [
-                (generate_random_slitting_tree(random.randint(2, MAX_NUMBER_OF_SLITS)),)
+                (
+                    generate_random_slitting_tree(
+                        size=random.randint(2, problem.max_number_of_slits),
+                        min_rectangle_width=problem.min_rectanle_width,
+                        min_rectangle_height=problem.min_rectanle_height,
+                    ),
+                )
                 for _ in range(n_samples)
             ]
         )
