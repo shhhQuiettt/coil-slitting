@@ -149,6 +149,7 @@ def get_rectangles(
 
 def average_rectangle_size(tree: Slit, sensors_sheet: npt.NDArray) -> float:
     rectangles = get_rectangles(tree, sensors_sheet)
+    # assert np.all([rectangle.sensors.size > 0 for rectangle in rectangles])
     return sum(rectangle.width * rectangle.height for rectangle in rectangles) / len(
         rectangles
     )
@@ -166,10 +167,14 @@ def average_weighted_worst_percentile(
     tree: Slit, *, sensors_sheet: npt.NDArray, percentile: float = 0.95
 ) -> float:
     rectangles = get_rectangles(tree, sensors_sheet)
-    print([rectangle.sensors for rectangle in rectangles])
+    # assert non-empty
+    # assert np.all([rectangle.sensors.size > 0 for rectangle in rectangles])
 
     percentiles = np.array(
-        [np.percentile(rectangle.sensors, percentile) for rectangle in rectangles]
+        [
+            np.percentile(r.sensors, percentile) if r.sensors.size > 0 else 0
+            for r in rectangles
+        ]
     )
     areas = np.array([rectangle.width * rectangle.height for rectangle in rectangles])
 

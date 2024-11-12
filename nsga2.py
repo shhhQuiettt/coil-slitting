@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import numpy.typing as npt
 from slicing_tree import (
     Slit as SlicingTree,
+    plot_slicing_tree,
     generate_random_slitting_tree,
     swap_random_subtree,
     average_rectangle_size,
@@ -20,9 +21,8 @@ from pymoo.core.duplicate import NoDuplicateElimination
 from anytree import NodeMixin
 from data import load_data
 
-POPULATION_SIZE = 1000
+POPULATION_SIZE = 100
 GENERATIONS = 10
-MAX_NUMBER_OF_SLITS = 20
 
 
 # Objectives:
@@ -50,6 +50,8 @@ class CoilSlitting(ElementwiseProblem):
             slitting[0], sensors_sheet=self.sensors_sheet
         )
         f2 = average_rectangle_size(slitting[0], self.sensors_sheet)
+
+        # print(f"Tree size:{(slitting[0]).size}: {f1=}, {f2=}")
 
         out["F"] = np.column_stack([f1, -f2])
 
@@ -121,4 +123,8 @@ if __name__ == "__main__":
     res = minimize(
         problem, algorithm, ("n_gen", GENERATIONS), seed=0xC0FFEE, verbose=True
     )
-    print(res.X)
+    print(res.X.shape)
+    x1, x2 = res.X[0][0], res.X[1][0]
+    print(x1, x2)
+    plot_slicing_tree(x1)
+    plot_slicing_tree(x2)
