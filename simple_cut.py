@@ -61,27 +61,61 @@ class Sheet:
                 last_cut = cut_y[i].y
             
             results.append(fragment[:, last_cut:])
-        print(results)
-        percentiles = []
-        for result in results:
-            percentiles.append(np.percentile(result, percentile, method='averaged_inverted_cdf'))
+        # print(results)
+        percentiles = np.array([ 
+                np.percentile(result, percentile, method='averaged_inverted_cdf') if result.size > 0 else 0
+                for result in results])
+        areas = np.array([result.shape[0]*result.shape[1] for result in results])
         
       
-        return np.sum(percentiles)/len(percentiles)
+        return np.sum(percentiles*areas)/np.sum(areas)
     
 
+    def average_rectangle_size(self) -> np.float64:
+        cut_x = sorted(self.cuts, key=lambda x: x.x)
+        cut_y = sorted(self.cuts, key=lambda x: x.y)
+        fragments = []
+        results = []
+        last_cut = 0
+        for i in range(len(cut_x)):
+            if cut_x[i].x == -1:
+                continue
+            
+            fragments.append(self.sheet[last_cut:cut_x[i].x, :])
+            last_cut = cut_x[i].x
+        
+        fragments.append(self.sheet[last_cut:, :])
+        
+        for fragment in fragments:
+            last_cut = 0
+            for i in  range(len(cut_y)):
+                if cut_y[i].y == -1:
+                    continue
 
+                results.append(fragment[:, last_cut:cut_y[i].y])
+                last_cut = cut_y[i].y
+            
+            results.append(fragment[:, last_cut:])
+        
+        return np.sum([result.shape[0]*result.shape[1] for result in results])/len(results)
+    
+    def get_sheet(self):
+        return self.sheet  
 
-sss = Sheet(single_sheet)
+if __name__ == "__main__":
 
+    sss = Sheet(single_sheet)
 
-sheets_cut = []
-# for i in range(1,len(single_sheet),2):
-#     sss.add_cut(Cut(i,-1))
+    
 
-for j in range(20,len(single_sheet[0]),20):
-    sss.add_cut(Cut(-1, j))
+    sheets_cut = []
+    for i in range(1,len(single_sheet),2):
+        sss.add_cut(Cut(i,-1))
 
-sss.average_weighted_worst_percentile()
-sss.add_cuts_to_sheet()
-display_sheet(sss.sheet)
+    for j in range(20,len(single_sheet[0]),20):
+        sss.add_cut(Cut(-1, j))
+
+    print(sss.average_weighted_worst_percentile())
+    print(sss.average_rectangle_size())
+    sss.add_cuts_to_sheet()
+    display_sheet(sss.sheet)
