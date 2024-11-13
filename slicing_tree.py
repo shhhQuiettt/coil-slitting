@@ -172,7 +172,7 @@ def average_weighted_worst_percentile(
 
     percentiles = np.array(
         [
-            np.percentile(r.sensors, percentile) if r.sensors.size > 0 else 0
+            np.percentile(r.sensors, percentile * 100) if r.sensors.size > 0 else 0
             for r in rectangles
         ]
     )
