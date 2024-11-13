@@ -26,8 +26,8 @@ from pymoo.visualization.scatter import Scatter
 from pymoo.core.duplicate import ElementwiseDuplicateElimination
 
 
-POPULATION_SIZE = 10
-GENERATIONS = 3
+POPULATION_SIZE = 500
+GENERATIONS = 100
 
 
 class CoilSlitting(ElementwiseProblem):
@@ -60,7 +60,6 @@ class CoilSlitting(ElementwiseProblem):
         # f2 = -average_rectangle_size(slitting[0], self.sensors_sheet)
         # print(f"Tree size:{(slitting[0]).size}: {f1=}, {f2=}")
 
-        print(type(out))
         out["F"] = np.column_stack([f1, -f2])
 
 
