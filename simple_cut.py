@@ -61,13 +61,12 @@ class Sheet:
                 last_cut = cut_y[i].y
             
             results.append(fragment[:, last_cut:])
-        print(results)
-        percentiles = []
-        for result in results:
-            percentiles.append(np.percentile(result, percentile, method='averaged_inverted_cdf'))
+        # print(results)
+        percentiles = np.array([np.percentile(result, percentile, method='averaged_inverted_cdf') for result in results])
+        areas = np.array([result.shape[0]*result.shape[1] for result in results])
         
       
-        return np.sum(percentiles)/len(percentiles)
+        return np.sum(percentiles*areas)/np.sum(areas)
     
 
 
