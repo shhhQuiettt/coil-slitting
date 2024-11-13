@@ -28,7 +28,7 @@ from pymoo.operators.selection.tournament import TournamentSelection
 from tournament import binary_tournament
 
 
-POPULATION_SIZE = 700
+POPULATION_SIZE = 2000
 GENERATIONS = 50
 
 
@@ -182,13 +182,13 @@ if __name__ == "__main__":
     print(x1, x2)
     print(x1 is x2)
 
-    print(RenderTree(x1))
-    print(RenderTree(x2))
+    # print(RenderTree(x1))
+    # print(RenderTree(x2))
 
-    x1.offset = 420
+    # x1.offset = 420
 
-    print(RenderTree(x1))
-    print(RenderTree(x2))
+    # print(RenderTree(x1))
+    # print(RenderTree(x2))
 
     print(res.F[:10])
     # for r in res.X:
