@@ -20,14 +20,16 @@ from pymoo.core.mutation import Mutation
 from pymoo.problems.multi import ElementwiseProblem
 from pymoo.optimize import minimize
 from pymoo.core.duplicate import NoDuplicateElimination
-from anytree import LevelOrderIter
+from anytree import LevelOrderIter, RenderTree
 from data import load_data
 from pymoo.visualization.scatter import Scatter
 from pymoo.core.duplicate import ElementwiseDuplicateElimination
+from pymoo.operators.selection.tournament import TournamentSelection
+from tournament import binary_tournament
 
 
-POPULATION_SIZE = 500
-GENERATIONS = 100
+POPULATION_SIZE = 700
+GENERATIONS = 50
 
 
 class CoilSlitting(ElementwiseProblem):
@@ -57,9 +59,6 @@ class CoilSlitting(ElementwiseProblem):
         )
         f2 = average_rectangle_size(slitting[0], self.sensors_sheet)
 
-        # f2 = -average_rectangle_size(slitting[0], self.sensors_sheet)
-        # print(f"Tree size:{(slitting[0]).size}: {f1=}, {f2=}")
-
         out["F"] = np.column_stack([f1, -f2])
 
 
@@ -84,9 +83,6 @@ class SwapSubtreeCrossover(Crossover):
         super().__init__(2, 2, prob=prob)
 
     def _do(self, problem, X, **kwargs):
-        return X
-
-        print("hu")
         _, n_matings, n_var = X.shape
         Y = np.full_like(X, None, dtype=object)
         for k in range(n_matings):
@@ -107,8 +103,6 @@ class JitterMutation(Mutation):
         super().__init__(prob=prob)
 
     def _do(self, problem, X, **kwargs):
-        return X
-
         for i in range(len(X)):
             tree = X[i, 0]
             for node in tree.descendants:
@@ -116,6 +110,7 @@ class JitterMutation(Mutation):
                     continue
 
                 if random.uniform(0, 1) < 1 / 3:
+                    # node.offset = max(0, min(1, node.offset + random.gauss(0, 0.15)))
                     node.offset = max(0, min(1, node.offset + random.gauss(0, 0.15)))
 
         return X
@@ -139,8 +134,8 @@ class DuplicateElimination(ElementwiseDuplicateElimination):
             ):
                 return False
 
-        #     if node_a.offset != node_b.offset or node_a.horizontal != node_b.horizontal:
-        #         return False
+            if node_a.offset != node_b.offset or node_a.horizontal != node_b.horizontal:
+                return False
 
         print("Equal")
         return True
@@ -162,13 +157,14 @@ if __name__ == "__main__":
     algorithm = NSGA2(
         pop_size=POPULATION_SIZE,
         # eliminate_duplicates=DuplicateElimination(),
+        selection=TournamentSelection(func_comp=binary_tournament),
         eliminate_duplicates=NoDuplicateElimination(),
         sampling=RandomSlicingTreeSampling(),
-        crossover=SwapSubtreeCrossover(prob=0.5),
+        crossover=SwapSubtreeCrossover(prob=0.2),
         mutation=JitterMutation(prob=0.8),
     )
     res = minimize(
-        problem, algorithm, ("n_gen", GENERATIONS), seed=0xC0FFEE, verbose=True
+        problem, algorithm, ("n_gen", GENERATIONS), seed=0xC1FFEE, verbose=True
     )
     print(res.X.shape)
     # print(x1, x2)
@@ -179,11 +175,31 @@ if __name__ == "__main__":
     # print(problem.pareto_front())
 
     print(res.F)
+
     print(np.unique(res.F, axis=0).size)
+
+    x1, x2 = res.X[30][0], res.X[31][0]
+    print(x1, x2)
+    print(x1 is x2)
+
+    print(RenderTree(x1))
+    print(RenderTree(x2))
+
+    x1.offset = 420
+
+    print(RenderTree(x1))
+    print(RenderTree(x2))
+
+    print(res.F[:10])
+    # for r in res.X:
+    #     plot_slicing_tree(r[0])
+    # print unique x
+
     Scatter().add(res.F).show()
+
 
 #     for i in range(len(res.X)):
 #         print(res.X[i])
 #         print(res.F[i])
 #         print()
-#         plot_slicing_tree(res.X[i][0])
+#         plot_licing_tree(res.X[i][0])
