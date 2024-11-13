@@ -250,13 +250,13 @@ def plot_slit_sheet(tree: Slit, sheet: npt.NDArray):
             # zero_row = np.zeros((1, sensors1.shape[1]))
             # sensors1 = np.vstack([sensors1, zero_row])
             # change last row to zero
-            s1[-1, :] = 0
+            s1[-1, :] = -1
             return np.vstack([s1, s2])
         else:
             # zero_column = np.zeros((sensors1.shape[0], 1))
             # sensors1 = np.hstack([sensors1, zero_column])
             # change last column to zero
-            s1[:, -1] = 0
+            s1[:, -1] = -1
             return np.hstack([s1, s2])
         
     
