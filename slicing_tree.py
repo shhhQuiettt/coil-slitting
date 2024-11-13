@@ -1,8 +1,10 @@
+from copy import deepcopy
 from dataclasses import dataclass
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy.typing as npt
-from data import load_data
+import pandas as pd
+from data import load_data, display_sheet
 import random
 from anytree import NodeMixin, PreOrderIter
 from anytree.exporter import DotExporter
@@ -229,6 +231,45 @@ def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
     plt.imshow(image)
     plt.show()
 
+def plot_slit_sheet(tree: Slit, sheet: npt.NDArray):
+    def plot_cut_sheet_rec(node: Slit, sheet: npt.NDArray) -> npt.NDArray:
+        if isinstance(node, EndNode):
+            return sheet
+
+
+        sensors1, sensors2 = split_array(sheet, node.offset, node.horizontal)
+        
+        if node.is_leaf:
+            s1 = sensors1
+            s2 = sensors2
+        else:
+            s1 = plot_cut_sheet_rec(node.children[0], sensors1)
+            s2 = plot_cut_sheet_rec(node.children[1], sensors2)
+
+        if node.horizontal:
+            # zero_row = np.zeros((1, sensors1.shape[1]))
+            # sensors1 = np.vstack([sensors1, zero_row])
+            # change last row to zero
+            s1[-1, :] = 0
+            return np.vstack([s1, s2])
+        else:
+            # zero_column = np.zeros((sensors1.shape[0], 1))
+            # sensors1 = np.hstack([sensors1, zero_column])
+            # change last column to zero
+            s1[:, -1] = 0
+            return np.hstack([s1, s2])
+        
+    
+    sh= plot_cut_sheet_rec(tree, deepcopy(sheet))
+    # print(sheet)
+    # print dataframe(sheet)
+    # df = pd.DataFrame(sheet)
+    # df.to_csv('output.csv', index=False)
+    plt.imshow(sh)
+    plt.show()
+    
+
+
 
 if __name__ == "__main__":
     example_tree = generate_random_slitting_tree(5)
@@ -241,8 +282,13 @@ if __name__ == "__main__":
     #     print()
     # sheet = load_data("./data.csv")[0]
     # plot_slits(example_tree, sheet)
-    # plot_slicing_tree(example_tree)
+    from simple_cut import Sheet
+    sss = Sheet(sheet)
+    sheet = sss.get_sheet()
+    display_sheet(sheet)
+    plot_slicing_tree(example_tree)
     # print(get_rectangles(example_tree, sheet))
 
-    print(average_weighted_worst_percentile(example_tree, sensors_sheet=sheet))
-    print(average_rectangle_size(example_tree, sensors_sheet=sheet))
+    # print(average_weighted_worst_percentile(example_tree, sensors_sheet=sheet))
+    # print(average_rectangle_size(example_tree, sensors_sheet=sheet))
+    plot_slit_sheet(example_tree, sheet)

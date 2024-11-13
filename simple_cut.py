@@ -68,19 +68,22 @@ class Sheet:
       
         return np.sum(percentiles*areas)/np.sum(areas)
     
+    def get_sheet(self):
+        return self.sheet  
 
-
-
-sss = Sheet(single_sheet)
-
-
-sheets_cut = []
-# for i in range(1,len(single_sheet),2):
-#     sss.add_cut(Cut(i,-1))
-
-for j in range(20,len(single_sheet[0]),20):
-    sss.add_cut(Cut(-1, j))
-
-sss.average_weighted_worst_percentile()
-sss.add_cuts_to_sheet()
-display_sheet(sss.sheet)
+if __name__ == "__main__":
+    
+    sss = Sheet(single_sheet)
+    
+    
+    sheets_cut = []
+    # for i in range(1,len(single_sheet),2):
+    #     sss.add_cut(Cut(i,-1))
+    
+    for j in range(20,len(single_sheet[0]),20):
+        sss.add_cut(Cut(-1, j))
+    
+    sss.average_weighted_worst_percentile()
+    sss.add_cuts_to_sheet()
+    display_sheet(sss.sheet)
+    
