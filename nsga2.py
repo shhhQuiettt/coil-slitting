@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import numpy.typing as npt
 from slicing_tree import (
     Slit as SlicingTree,
+    plot_slicing_tree,
     generate_random_slitting_tree,
     swap_random_subtree,
     average_rectangle_size,
@@ -20,9 +21,8 @@ from pymoo.core.duplicate import NoDuplicateElimination
 from anytree import NodeMixin
 from data import load_data
 
-POPULATION_SIZE = 1000
+POPULATION_SIZE = 100
 GENERATIONS = 10
-MAX_NUMBER_OF_SLITS = 20
 
 
 # Objectives:
@@ -51,23 +51,18 @@ class CoilSlitting(ElementwiseProblem):
         )
         f2 = average_rectangle_size(slitting[0], self.sensors_sheet)
 
+        # print(f"Tree size:{(slitting[0]).size}: {f1=}, {f2=}")
+
         out["F"] = np.column_stack([f1, -f2])
 
 
 class RandomSlicingTreeSampling(Sampling):
     def _do(self, problem, n_samples, **kwargs):
-        # X = np.full((n_samples, 1), None, dtype=object)
-
-        # for individual_id in range(n_samples):
-        #     # doesnt include minimal rectangle size
-        #     X[individual_id, 0] = SlicingTree.random(MAX_NUMBER_OF_SLITS)
         X = np.array(
             [
                 (
                     generate_random_slitting_tree(
                         size=random.randint(2, problem.max_number_of_slits),
-                        min_rectangle_width=problem.min_rectanle_width,
-                        min_rectangle_height=problem.min_rectanle_height,
                     ),
                 )
                 for _ in range(n_samples)
@@ -112,14 +107,10 @@ if __name__ == "__main__":
     sheet_width = 100
     sheet_height = 100
 
-    max_rectangle_width = 0.2 * sheet_width
-    max_rectangle_height = 0.2 * sheet_height
+    min_rectangle_width = 0.2 * sheet_width
+    min_rectangle_height = 0.2 * sheet_height
 
     problem = CoilSlitting(
-        max_rectangle_size=-1,
-        min_rectangle_size=-1,
-        sheet_width=100,
-        sheet_height=100,
         sensors_sheet=single_sheet,
     )
     algorithm = NSGA2(
@@ -132,4 +123,8 @@ if __name__ == "__main__":
     res = minimize(
         problem, algorithm, ("n_gen", GENERATIONS), seed=0xC0FFEE, verbose=True
     )
-    print(res.X)
+    print(res.X.shape)
+    x1, x2 = res.X[0][0], res.X[1][0]
+    print(x1, x2)
+    plot_slicing_tree(x1)
+    plot_slicing_tree(x2)

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy.typing as npt
+from data import load_data
 import random
 from anytree import NodeMixin, PreOrderIter
 from anytree.exporter import DotExporter
@@ -14,7 +15,6 @@ class Slit(NodeMixin):
     horizontal: bool
     offset: float  # percentage of the width/height
     # offset: int  # absolute value
-    slitted_sheet: npt.NDArray
 
     def __repr__(self) -> str:
         return f"Slit(horizontal={self.horizontal}, offset={self.offset:.2f}, size={self.size})"
@@ -38,33 +38,29 @@ class EndNode(NodeMixin):
         return f"END{self.count}"
 
 
-# @dataclass
-# class Rectangle:
-#     sensors: npt.NDArray
+@dataclass
+class Rectangle:
+    sensors: npt.NDArray
 
-#     def sensors_variance(self) -> float:
-#         return self.sensors.var()
+    def sensors_variance(self) -> float:
+        return self.sensors.var()
 
-#     @property
-#     def width(self) -> int:
-#         return self.sensors.shape[0]
+    @property
+    def width(self) -> int:
+        return self.sensors.shape[0]
 
-#     @property
-#     def height(self) -> int:
-#         return self.sensors.shape[1]
+    @property
+    def height(self) -> int:
+        return self.sensors.shape[1]
 
 
 def generate_random_slitting_tree(
-    *,
     size: int,
-    min_rectangle_width: int,
-    min_rectangle_height: int,
-    sensors_sheet: npt.NDArray,
 ) -> Slit:
     if size == 1:
-        # return Slit(horizontal=random.choice([True, False]), offset=random.random())
-        horizontal = random.choice([True, False])
-
+        return Slit(
+            horizontal=random.choice([True, False]), offset=random.uniform(0.3, 0.7)
+        )
         # return Slit()
 
     size -= 1
@@ -88,7 +84,8 @@ def generate_random_slitting_tree(
 
     node = Slit(
         horizontal=random.choice([True, False]),
-        offset=random.random(),
+        # offset=random.random(),
+        offset=random.uniform(0.3, 0.7),
     )
 
     node.children = children
@@ -102,6 +99,23 @@ def swap_random_subtree(tree1: Slit, tree2: Slit) -> None:
     node1.parent, node2.parent = node2.parent, node1.parent
 
 
+def split_array(
+    sensors: npt.NDArray,
+    offset: float,
+    horizontal: bool,
+) -> tuple[npt.NDArray, npt.NDArray]:
+    if horizontal:
+        return (
+            sensors[: int(offset * sensors.shape[0])],
+            sensors[int(offset * sensors.shape[0]) :],
+        )
+    else:
+        return (
+            sensors[:, : int(offset * sensors.shape[1])],
+            sensors[:, int(offset * sensors.shape[1]) :],
+        )
+
+
 # TODO: return np.array
 def get_rectangles(
     node: Slit,
@@ -110,44 +124,32 @@ def get_rectangles(
     if isinstance(node, EndNode):
         return []
 
-    height, width = sensors_sheet.shape
-    horizontal_split_height = node.offset if node.horizontal else height
-    vertical_split_width = width * node.offset if not node.horizontal else width
+    sensors1, sensors2 = split_array(sensors_sheet, node.offset, node.horizontal)
 
     if not node.children:
-
         return [
-            # what about sensors on the edge?
-            Rectangle(
-                sensors_sheet[
-                    : int(vertical_split_width), : int(horizontal_split_height)
-                ]
-            ),
-            Rectangle(
-                sensors_sheet[
-                    int(vertical_split_width) :, int(horizontal_split_height) :
-                ]
-            ),
+            Rectangle(sensors=sensors1),
+            Rectangle(sensors=sensors2),
         ]
 
-    rectangles_children1 = get_rectangles(
-        node.children[0],
-        sensors_sheet[: int(vertical_split_width), : int(horizontal_split_height)],
-    )
+    assert len(node.children) == 2
+    res = []
+    if isinstance(node.children[0], EndNode):
+        res.append(Rectangle(sensors=sensors1))
+    else:
+        res.extend(get_rectangles(node.children[0], sensors1))
 
-    if len(node.children) == 1:
-        return rectangles_children1
+    if isinstance(node.children[1], EndNode):
+        res.append(Rectangle(sensors=sensors2))
+    else:
+        res.extend(get_rectangles(node.children[1], sensors2))
 
-    rectangles_children2 = get_rectangles(
-        node.children[1],
-        sensors_sheet[int(vertical_split_width) :, int(horizontal_split_height) :],
-    )
-
-    return rectangles_children1 + rectangles_children2
+    return res
 
 
 def average_rectangle_size(tree: Slit, sensors_sheet: npt.NDArray) -> float:
     rectangles = get_rectangles(tree, sensors_sheet)
+    # assert np.all([rectangle.sensors.size > 0 for rectangle in rectangles])
     return sum(rectangle.width * rectangle.height for rectangle in rectangles) / len(
         rectangles
     )
@@ -165,9 +167,14 @@ def average_weighted_worst_percentile(
     tree: Slit, *, sensors_sheet: npt.NDArray, percentile: float = 0.95
 ) -> float:
     rectangles = get_rectangles(tree, sensors_sheet)
+    # assert non-empty
+    # assert np.all([rectangle.sensors.size > 0 for rectangle in rectangles])
 
     percentiles = np.array(
-        [np.percentile(rectangle.sensors, percentile) for rectangle in rectangles]
+        [
+            np.percentile(r.sensors, percentile) if r.sensors.size > 0 else 0
+            for r in rectangles
+        ]
     )
     areas = np.array([rectangle.width * rectangle.height for rectangle in rectangles])
 
@@ -224,9 +231,9 @@ def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
 
 
 if __name__ == "__main__":
-    example_tree = generate_random_slitting_tree(10)
-
-    np.random.seed(1)
+    example_tree = generate_random_slitting_tree(5)
+    sheet = load_data("./data.csv")[0]
+    # np.random.seed(1)
     # print(np.random.random((100, 100)))
     # for r in get_rectangles(example_tree, 100, 100, np.random.random((100, 100))):
     #     print(r.width, r.height)
@@ -234,4 +241,8 @@ if __name__ == "__main__":
     #     print()
     # sheet = load_data("./data.csv")[0]
     # plot_slits(example_tree, sheet)
-    plot_slicing_tree(example_tree)
+    # plot_slicing_tree(example_tree)
+    # print(get_rectangles(example_tree, sheet))
+
+    print(average_weighted_worst_percentile(example_tree, sensors_sheet=sheet))
+    print(average_rectangle_size(example_tree, sensors_sheet=sheet))
