@@ -29,9 +29,18 @@ from pymoo.core.duplicate import ElementwiseDuplicateElimination
 from pymoo.operators.selection.tournament import TournamentSelection
 from tournament import binary_tournament
 
+from itertools import combinations
 
 POPULATION_SIZE = 100
 GENERATIONS = 100
+
+
+def sanity_check(population):
+    pop = population.flatten()
+
+    for a, b in combinations(pop, 2):
+        if a is b:
+            raise ValueError("fcking duplicate same python bshit as always")
 
 
 class CoilSlitting(ElementwiseProblem):
@@ -76,6 +85,7 @@ class RandomSlicingTreeSampling(Sampling):
                 for _ in range(n_samples)
             ]
         )
+        sanity_check(X)
 
         return X
 
@@ -85,6 +95,7 @@ class SwapSubtreeCrossover(Crossover):
         super().__init__(2, 2, prob=prob)
 
     def _do(self, problem, X, **kwargs):
+        print("Crossover")
         _, n_matings, n_var = X.shape
         Y = np.full_like(X, None, dtype=object)
         for k in range(n_matings):
@@ -97,6 +108,7 @@ class SwapSubtreeCrossover(Crossover):
 
             Y[0, k, 0], Y[1, k, 0] = child1, child2
 
+        sanity_check(Y)
         return Y
 
 
@@ -105,6 +117,8 @@ class JitterMutation(Mutation):
         super().__init__(prob=prob)
 
     def _do(self, problem, X, **kwargs):
+        print("Mutation start")
+        sanity_check(X)
         for i in range(len(X)):
             tree = X[i, 0]
             for node in tree.descendants:
@@ -115,6 +129,8 @@ class JitterMutation(Mutation):
                     # node.offset = max(0, min(1, node.offset + random.gauss(0, 0.15)))
                     node.offset = max(0, min(1, node.offset + random.gauss(0, 0.15)))
 
+        print("Mutation end")
+        sanity_check(X)
         return X
 
 
@@ -161,6 +177,7 @@ def run(sheet: npt.NDArray):
     res = minimize(
         problem, algorithm, ("n_gen", GENERATIONS), seed=0xC1FFEE, verbose=True
     )
+    sanity_check(res.X)
     # print(res.X.shape)
     # print(x1, x2)
     # print(res.X)
