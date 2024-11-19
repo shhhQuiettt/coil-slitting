@@ -30,8 +30,8 @@ from pymoo.operators.selection.tournament import TournamentSelection
 from tournament import binary_tournament
 
 
-POPULATION_SIZE = 2000
-GENERATIONS = 50
+POPULATION_SIZE = 100
+GENERATIONS = 100
 
 
 class CoilSlitting(ElementwiseProblem):
@@ -143,47 +143,39 @@ class DuplicateElimination(ElementwiseDuplicateElimination):
         return True
 
 
-if __name__ == "__main__":
-
-    single_sheet = load_data("./data.csv")[1]
-    display_sheet(single_sheet)
-
-    sheet_width = 100
-    sheet_height = 100
-
-    min_rectangle_width = 0.2 * sheet_width
-    min_rectangle_height = 0.2 * sheet_height
+def run(sheet: npt.NDArray):
+    # display_sheet(sheet)
 
     problem = CoilSlitting(
-        sensors_sheet=single_sheet,
+        sensors_sheet=sheet,
     )
-    # algorithm = NSGA2(
-    #     pop_size=POPULATION_SIZE,
-    #     # eliminate_duplicates=DuplicateElimination(),
-    #     selection=TournamentSelection(func_comp=binary_tournament),
-    #     eliminate_duplicates=NoDuplicateElimination(),
-    #     sampling=RandomSlicingTreeSampling(),
-    #     crossover=SwapSubtreeCrossover(prob=0.2),
-    #     mutation=JitterMutation(prob=0.8),
-    # )
+    algorithm = NSGA2(
+        pop_size=POPULATION_SIZE,
+        # eliminate_duplicates=DuplicateElimination(),
+        selection=TournamentSelection(func_comp=binary_tournament),
+        eliminate_duplicates=NoDuplicateElimination(),
+        sampling=RandomSlicingTreeSampling(),
+        crossover=SwapSubtreeCrossover(prob=0.2),
+        mutation=JitterMutation(prob=0.8),
+    )
     res = minimize(
         problem, algorithm, ("n_gen", GENERATIONS), seed=0xC1FFEE, verbose=True
     )
-    print(res.X.shape)
+    # print(res.X.shape)
     # print(x1, x2)
-    print(res.X)
+    # print(res.X)
     # plot_slicing_tree(x1)
     # plot_slicing_tree(x2)
-    print()
+    # print()
     # print(problem.pareto_front())
 
-    print(res.F)
+    # print(res.F)
 
-    print(np.unique(res.F, axis=0).size)
+    # print(np.unique(res.F, axis=0).size)
 
-    x1, x2 = res.X[30][0], res.X[31][0]
-    print(x1, x2)
-    print(x1 is x2)
+    # x1, x2 = res.X[30][0], res.X[31][0]
+    # print(x1, x2)
+    # print(x1 is x2)
 
     # print(RenderTree(x1))
     # print(RenderTree(x2))
@@ -193,16 +185,22 @@ if __name__ == "__main__":
     # print(RenderTree(x1))
     # print(RenderTree(x2))
 
-    print(res.F[:10])
+    # print(res.F[:10])
     # for r in res.X:
     #     plot_slicing_tree(r[0])
     # print unique x
 
     Scatter().add(res.F).show()
 
+    #     for i in range(len(res.X)):
+    #         print(res.X[i])
+    #         print(res.F[i])
+    #         print()
+    #         plot_licing_tree(res.X[i][0])
+    print(f"Pareto front: {problem.pareto_front()}")
+    return res
 
-#     for i in range(len(res.X)):
-#         print(res.X[i])
-#         print(res.F[i])
-#         print()
-#         plot_licing_tree(res.X[i][0])
+
+if __name__ == "__main__":
+    single_sheet: npt.NDArray = load_data("./data.csv")[0]
+    run(single_sheet)
