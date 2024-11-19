@@ -231,44 +231,43 @@ def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
     plt.imshow(image)
     plt.show()
 
+
+def make_rectangles_in_sheet(node: Slit, sheet: npt.NDArray) -> npt.NDArray:
+    if isinstance(node, EndNode):
+        return sheet
+
+    sensors1, sensors2 = split_array(sheet, node.offset, node.horizontal)
+
+    if node.is_leaf:
+        s1 = sensors1
+        s2 = sensors2
+    else:
+        s1 = make_rectangles_in_sheet(node.children[0], sensors1)
+        s2 = make_rectangles_in_sheet(node.children[1], sensors2)
+
+    if node.horizontal:
+        # zero_row = np.zeros((1, sensors1.shape[1]))
+        # sensors1 = np.vstack([sensors1, zero_row])
+        # change last row to zero
+        s1[-1, :] = 0
+        return np.vstack([s1, s2])
+    else:
+        # zero_column = np.zeros((sensors1.shape[0], 1))
+        # sensors1 = np.hstack([sensors1, zero_column])
+        # change last column to zero
+        s1[:, -1] = 0
+        return np.hstack([s1, s2])
+
+
 def plot_slit_sheet(tree: Slit, sheet: npt.NDArray):
-    def plot_cut_sheet_rec(node: Slit, sheet: npt.NDArray) -> npt.NDArray:
-        if isinstance(node, EndNode):
-            return sheet
 
-
-        sensors1, sensors2 = split_array(sheet, node.offset, node.horizontal)
-        
-        if node.is_leaf:
-            s1 = sensors1
-            s2 = sensors2
-        else:
-            s1 = plot_cut_sheet_rec(node.children[0], sensors1)
-            s2 = plot_cut_sheet_rec(node.children[1], sensors2)
-
-        if node.horizontal:
-            # zero_row = np.zeros((1, sensors1.shape[1]))
-            # sensors1 = np.vstack([sensors1, zero_row])
-            # change last row to zero
-            s1[-1, :] = -1
-            return np.vstack([s1, s2])
-        else:
-            # zero_column = np.zeros((sensors1.shape[0], 1))
-            # sensors1 = np.hstack([sensors1, zero_column])
-            # change last column to zero
-            s1[:, -1] = -1
-            return np.hstack([s1, s2])
-        
-    
-    sh= plot_cut_sheet_rec(tree, deepcopy(sheet))
+    sh = make_rectangles_in_sheet(tree, deepcopy(sheet))
     # print(sheet)
     # print dataframe(sheet)
     # df = pd.DataFrame(sheet)
     # df.to_csv('output.csv', index=False)
     plt.imshow(sh)
     plt.show()
-    
-
 
 
 if __name__ == "__main__":
@@ -283,6 +282,7 @@ if __name__ == "__main__":
     # sheet = load_data("./data.csv")[0]
     # plot_slits(example_tree, sheet)
     from simple_cut import Sheet
+
     sss = Sheet(sheet)
     sheet = sss.get_sheet()
     display_sheet(sheet)

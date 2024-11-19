@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
+from data import display_sheet
 from slicing_tree import (
     Slit as SlicingTree,
+    plot_slit_sheet,
     plot_slicing_tree,
     EndNode,
     generate_random_slitting_tree,
@@ -143,7 +145,8 @@ class DuplicateElimination(ElementwiseDuplicateElimination):
 
 if __name__ == "__main__":
 
-    single_sheet = load_data("./data.csv")[0]
+    single_sheet = load_data("./data.csv")[1]
+    display_sheet(single_sheet)
 
     sheet_width = 100
     sheet_height = 100
@@ -154,15 +157,15 @@ if __name__ == "__main__":
     problem = CoilSlitting(
         sensors_sheet=single_sheet,
     )
-    algorithm = NSGA2(
-        pop_size=POPULATION_SIZE,
-        # eliminate_duplicates=DuplicateElimination(),
-        selection=TournamentSelection(func_comp=binary_tournament),
-        eliminate_duplicates=NoDuplicateElimination(),
-        sampling=RandomSlicingTreeSampling(),
-        crossover=SwapSubtreeCrossover(prob=0.2),
-        mutation=JitterMutation(prob=0.8),
-    )
+    # algorithm = NSGA2(
+    #     pop_size=POPULATION_SIZE,
+    #     # eliminate_duplicates=DuplicateElimination(),
+    #     selection=TournamentSelection(func_comp=binary_tournament),
+    #     eliminate_duplicates=NoDuplicateElimination(),
+    #     sampling=RandomSlicingTreeSampling(),
+    #     crossover=SwapSubtreeCrossover(prob=0.2),
+    #     mutation=JitterMutation(prob=0.8),
+    # )
     res = minimize(
         problem, algorithm, ("n_gen", GENERATIONS), seed=0xC1FFEE, verbose=True
     )
