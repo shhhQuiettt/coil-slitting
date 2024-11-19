@@ -17,7 +17,9 @@ from copy import deepcopy
 import random
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.sampling import Sampling
-from pymoo.core.crossover import Crossover
+
+# from pymoo.core.crossover import Crossover
+from crossover_override import Crossover
 from pymoo.core.mutation import Mutation
 from pymoo.problems.multi import ElementwiseProblem
 from pymoo.optimize import minimize
@@ -31,7 +33,7 @@ from tournament import binary_tournament
 
 from itertools import combinations
 
-POPULATION_SIZE = 100
+POPULATION_SIZE = 1000
 GENERATIONS = 100
 
 
@@ -95,7 +97,7 @@ class SwapSubtreeCrossover(Crossover):
         super().__init__(2, 2, prob=prob)
 
     def _do(self, problem, X, **kwargs):
-        print("Crossover")
+        # print("Crossover")
         _, n_matings, n_var = X.shape
         Y = np.full_like(X, None, dtype=object)
         for k in range(n_matings):
@@ -117,7 +119,7 @@ class JitterMutation(Mutation):
         super().__init__(prob=prob)
 
     def _do(self, problem, X, **kwargs):
-        print("Mutation start")
+        # print("Mutation start")
         sanity_check(X)
         for i in range(len(X)):
             tree = X[i, 0]
@@ -126,10 +128,9 @@ class JitterMutation(Mutation):
                     continue
 
                 if random.uniform(0, 1) < 1 / 3:
-                    # node.offset = max(0, min(1, node.offset + random.gauss(0, 0.15)))
                     node.offset = max(0, min(1, node.offset + random.gauss(0, 0.15)))
 
-        print("Mutation end")
+        # print("Mutation end")
         sanity_check(X)
         return X
 
@@ -214,10 +215,9 @@ def run(sheet: npt.NDArray):
     #         print(res.F[i])
     #         print()
     #         plot_licing_tree(res.X[i][0])
-    print(f"Pareto front: {problem.pareto_front()}")
     return res
 
 
 if __name__ == "__main__":
     single_sheet: npt.NDArray = load_data("./data.csv")[0]
-    run(single_sheet)
+    res = run(single_sheet)
