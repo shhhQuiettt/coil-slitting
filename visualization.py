@@ -1,5 +1,5 @@
-from numpy import size
 import numpy as np
+import matplotlib.pyplot as plt
 import streamlit as st
 from data import load_data
 import numpy.typing as npt
@@ -68,7 +68,7 @@ def display_cuts_and_objectives(tree: Slit, sheet: npt.NDArray):
             st.write("Objective functions")
             for i, func in enumerate(objective_functions):
                 st.write(
-                    f"{i+1}. {func.__name__} {func(tree, sensors_sheet=sheet):.3f}"
+                    f"{i+1}. {func.__name__} {func(tree, sensors_sheet=sheet):.4f}"
                 )
 
 
@@ -86,7 +86,9 @@ def main():
     # later pareto front
     for tree, objectives in zip(uniques_trees, unique_objectives):
         try:
+            plot_slit_sheet(tree, single_sheet)
             display_cuts_and_objectives(tree, single_sheet)
+            st.write(objectives)
         except IndexError:
             st.write("Could not process tree")
 

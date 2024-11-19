@@ -260,7 +260,6 @@ def make_rectangles_in_sheet(node: Slit, sheet: npt.NDArray) -> npt.NDArray:
 
 
 def plot_slit_sheet(tree: Slit, sheet: npt.NDArray):
-
     sh = make_rectangles_in_sheet(tree, deepcopy(sheet))
     # print(sheet)
     # print dataframe(sheet)
