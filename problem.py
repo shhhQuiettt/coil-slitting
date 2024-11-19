@@ -1,10 +1,13 @@
 from copy import deepcopy
 from pymoo.problems.multi import ElementwiseProblem
 from pymoo.core.sampling import Sampling
-from pymoo.core.crossover import Crossover
+# from pymoo.core.crossover import Crossover
+from tournament import binary_tournament
+from crossover_override import Crossover
 from pymoo.core.mutation import Mutation
 from pymoo.core.duplicate import NoDuplicateElimination
 from pymoo.core.duplicate import ElementwiseDuplicateElimination
+from pymoo.operators.selection.tournament import TournamentSelection
 from simple_cut import Sheet, Cut
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.visualization.scatter import Scatter
@@ -112,7 +115,7 @@ class MyMutation(Mutation):
             r = np.random.random()
 
             # with a probabilty of 40% - change the order of characters
-            if r < 0.4:
+            if r < 0.7:
                 
                 cuts_len = len(X[i, 0].cuts)
                 if cuts_len > 2:
@@ -121,7 +124,7 @@ class MyMutation(Mutation):
                         X[i, 0].cuts[idx].x = X[i, 0].cuts[idx].x + 1
 
             # also with a probabilty of 40% - change a character randomly
-            elif r < 0.5:
+            elif r < 0.8:
                 cuts_len = len(X[i, 0].cuts)
                 if cuts_len > 2:
                     idx = np.random.randint(0, cuts_len-1)
@@ -142,6 +145,7 @@ if __name__ == "__main__":
     algorithm = NSGA2(
         pop_size=POPULATION_SIZE,
         # eliminate_duplicates=MyDuplicateElimination(),
+        selection=TournamentSelection(func_comp=binary_tournament),
         eliminate_duplicates=NoDuplicateElimination(),
         sampling=RandomSampling(),
         crossover=MyCrossover(),

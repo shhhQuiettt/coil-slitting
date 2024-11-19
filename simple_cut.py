@@ -13,6 +13,8 @@ class Sheet:
     def __init__(self, sheet: np.ndarray):
         self.sheet = self.remove_zeros(sheet)
         self.cuts = []
+        self.av_percentile = 0
+        self.av_size = 0
 
     def add_cut(self, cut: Cut):
         if cut.x < len(self.sheet) and cut.y < len(self.sheet[0]):
