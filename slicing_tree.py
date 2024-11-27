@@ -183,14 +183,24 @@ def average_weighted_worst_percentile(
     return np.sum(percentiles * areas) / np.sum(areas)
 
 
+def generate_slicing_tree_img_file(tree: Slit) -> str:
+    generate_slicing_tree_img_file.count = (
+        0
+        if not hasattr(generate_slicing_tree_img_file, "count")
+        else generate_slicing_tree_img_file.count + 1
+    )
+    # with tempfile.NamedTemporaryFile(suffix=".png") as dot_output:
+    DotExporter(
+        tree,
+        nodenamefunc=lambda node: str(node),
+    ).to_picture(f"./tree_imgs/tree{generate_slicing_tree_img_file.count}.png")
+
+    return f"./tree_imgs/tree{generate_slicing_tree_img_file.count}.png"
+
+
 def plot_slicing_tree(tree: Slit):
-    with tempfile.NamedTemporaryFile(suffix=".png") as dot_output:
-        DotExporter(
-            tree,
-            nodenamefunc=lambda node: str(node),
-        ).to_picture(dot_output.name)
-        plt.imshow(plt.imread(dot_output.name))
-        plt.show()
+    plt.imshow(plt.imread(generate_slicing_tree_img_file(tree)))
+    plt.show()
 
 
 def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):

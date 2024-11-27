@@ -33,7 +33,7 @@ from tournament import binary_tournament
 
 from itertools import combinations
 
-POPULATION_SIZE = 1000
+POPULATION_SIZE = 100
 GENERATIONS = 100
 
 
@@ -156,11 +156,11 @@ class DuplicateElimination(ElementwiseDuplicateElimination):
             if node_a.offset != node_b.offset or node_a.horizontal != node_b.horizontal:
                 return False
 
-        print("Equal")
         return True
 
 
 def run(sheet: npt.NDArray):
+    print("run")
     # display_sheet(sheet)
 
     problem = CoilSlitting(
@@ -168,9 +168,9 @@ def run(sheet: npt.NDArray):
     )
     algorithm = NSGA2(
         pop_size=POPULATION_SIZE,
-        # eliminate_duplicates=DuplicateElimination(),
+        eliminate_duplicates=DuplicateElimination(),
         selection=TournamentSelection(func_comp=binary_tournament),
-        eliminate_duplicates=NoDuplicateElimination(),
+        # eliminate_duplicates=NoDuplicateElimination(),
         sampling=RandomSlicingTreeSampling(),
         crossover=SwapSubtreeCrossover(prob=0.2),
         mutation=JitterMutation(prob=0.8),
@@ -219,5 +219,6 @@ def run(sheet: npt.NDArray):
 
 
 if __name__ == "__main__":
+    print("Nsga2 from main")
     single_sheet: npt.NDArray = load_data("./data.csv")[0]
     res = run(single_sheet)

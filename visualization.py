@@ -13,17 +13,13 @@ from slicing_tree import (
     generate_random_slitting_tree,
     plot_slit_sheet,
     make_rectangles_in_sheet,
+    generate_slicing_tree_img_file,
 )
 
 objective_functions = (
     average_rectangle_size,
     average_weighted_worst_percentile,
 )
-
-
-@st.cache_data
-def generate_nsga2():
-    return nsga2.run()
 
 
 @st.cache_data
@@ -36,8 +32,12 @@ def load():
 def display_cuts_and_objectives(tree: Slit, sheet: npt.NDArray):
     container = st.container()
     with container:
-        col1, col2 = st.columns([9, 1])
+        col1, col2, col3 = st.columns([5, 5, 1])
         with col1:
+            img_filename = generate_slicing_tree_img_file(tree)
+            st.image(img_filename, use_column_width=True)
+
+        with col2:
             print()
             fig = go.Figure()
             fig.add_trace(
@@ -63,7 +63,7 @@ def display_cuts_and_objectives(tree: Slit, sheet: npt.NDArray):
                 fig, key=display_cuts_and_objectives.plotly_key
             )  # , use_container_width=True)
 
-        with col2:
+        with col3:
             # plot_slit_sheet(slitting_tree, st.session_state["sheet"])
             st.write("Objective functions")
             for i, func in enumerate(objective_functions):
@@ -72,23 +72,31 @@ def display_cuts_and_objectives(tree: Slit, sheet: npt.NDArray):
                 )
 
 
+@st.cache_data
+def run_nsga2():
+    return nsga2.run(load())
+
+
 def main():
     single_sheet: npt.NDArray = load()
-    res = nsga2.run(single_sheet)
+    print("he")
+    res = run_nsga2()
 
     print(type(res.F))
 
-    unique_objectives, indices = np.unique(res.F, axis=0, return_index=True)
-    uniques_trees = res.X[indices, 0]
+    # unique_objectives, indices = np.unique(res.F, axis=0, return_index=True)
+    # uniques_trees = res.X[indices, 0]
 
-    st.write("Number of unique objectives", len(unique_objectives))
+    # st.write("Number of unique objectives", len(unique_objectives))
+    st.write("Number of elements", len(res.X))
 
     # later pareto front
-    for tree, objectives in zip(uniques_trees, unique_objectives):
+    # for tree, objectives in zip(uniques_trees, unique_objectives):
+    for tree, objectives in zip(res.X[:, 0], res.F):
         try:
             plot_slit_sheet(tree, single_sheet)
             display_cuts_and_objectives(tree, single_sheet)
-            st.write(objectives)
+            # st.write(objectives)
         except IndexError:
             st.write("Could not process tree")
 
