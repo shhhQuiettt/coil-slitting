@@ -11,6 +11,8 @@ from anytree.exporter import DotExporter
 import tempfile
 from queue import Queue
 
+import cv2
+
 
 @dataclass
 class Slit(NodeMixin):
@@ -242,7 +244,14 @@ def plot_slits(tree: Slit, sensors_sheet: npt.NDArray):
     plt.show()
 
 
-def make_rectangles_in_sheet(node: Slit, sheet: npt.NDArray) -> npt.NDArray:
+def make_rectangles_in_sheet(node: Slit, sheet: npt.NDArray):
+    multiplier = 3
+    h, w = sheet.shape
+    sheet = cv2.resize(sheet, (w * multiplier, h * multiplier))
+    return _make_rectangles_in_sheet(node, sheet)
+
+
+def _make_rectangles_in_sheet(node: Slit, sheet: npt.NDArray) -> npt.NDArray:
     if isinstance(node, EndNode):
         return sheet
 
@@ -252,8 +261,8 @@ def make_rectangles_in_sheet(node: Slit, sheet: npt.NDArray) -> npt.NDArray:
         s1 = sensors1
         s2 = sensors2
     else:
-        s1 = make_rectangles_in_sheet(node.children[0], sensors1)
-        s2 = make_rectangles_in_sheet(node.children[1], sensors2)
+        s1 = _make_rectangles_in_sheet(node.children[0], sensors1)
+        s2 = _make_rectangles_in_sheet(node.children[1], sensors2)
 
     if node.horizontal:
         # zero_row = np.zeros((1, sensors1.shape[1]))

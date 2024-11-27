@@ -1,5 +1,4 @@
 import numpy as np
-from pymoo.visualization.scatter import Scatter
 import matplotlib.pyplot as plt
 import streamlit as st
 from data import load_data
@@ -31,19 +30,20 @@ def load():
 
 
 def display_cuts_and_objectives(tree: Slit, sheet: npt.NDArray):
-    container = st.container(border=True)
+    container = st.container()
     with container:
-        col1, col2, col3 = st.columns([3, 5, 2])
+        col1, col2, col3 = st.columns([5, 5, 1])
         with col1:
             img_filename = generate_slicing_tree_img_file(tree)
             st.image(img_filename, use_column_width=True)
 
         with col2:
+            print()
             fig = go.Figure()
             fig.add_trace(
                 go.Heatmap(
                     z=make_rectangles_in_sheet(tree, sheet),
-                    colorscale="viridis",
+                    colorscale="gray",
                     showscale=False,
                 )
             )
@@ -78,78 +78,17 @@ def run_nsga2():
 
 
 def main():
-    st.set_page_config(layout="wide")
     single_sheet: npt.NDArray = load()
+    print("he")
     res = run_nsga2()
+
+    print(type(res.F))
 
     # unique_objectives, indices = np.unique(res.F, axis=0, return_index=True)
     # uniques_trees = res.X[indices, 0]
 
     # st.write("Number of unique objectives", len(unique_objectives))
-    # st.write("Number of elements", len(res.X))
-    # st.write(len(res.pop))
-    # st.write(res.pop.get("X"))
-
-    pareto = np.abs(res.F)
-    population = np.abs(res.pop.get("F"))
-    st.write(len(pareto))
-    st.write(len(population))
-
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        # fig, ax = plt.subplots()
-        # ax.scatter(
-        #     population[:, 0], population[:, 1], c="lightblue", label="Population"
-        # )
-        # ax.scatter(pareto[:, 0], pareto[:, 1], c="red", label="Pareto front")
-        # ax.set_xlabel("Average weighted worst percentile")
-        # ax.set_ylabel("Average rectangle size")
-        # ax.legend()
-        # fig.set_figwidth(5)
-        # display as plotly
-        # make the same graph but in plotly
-
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=population[:, 0],
-                y=population[:, 1],
-                mode="markers",
-                marker=dict(size=10, color="lightblue"),
-                name="Population",
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=pareto[:, 0],
-                y=pareto[:, 1],
-                mode="markers",
-                marker=dict(size=10, color="red"),
-                name="Pareto front",
-            )
-        )
-        # perfect solution
-        fig.add_trace(
-            go.Scatter(
-                x=(np.min(pareto[:, 0]),),
-                y=(np.max(pareto[:, 1]),),
-                mode="markers",
-                marker_symbol="star",
-                # size of symbo
-                marker=dict(size=20, color="green"),
-                name="Hypothetical perfect solution",
-            )
-        )
-        fig.update_layout(
-            xaxis_title="Average weighted worst percentile",
-            yaxis_title="Average rectangle size",
-            width=900,
-            height=600,
-        )
-
-        st.plotly_chart(fig)
-
-        # st.pyplot(fig)
+    st.write("Number of elements", len(res.X))
 
     # later pareto front
     # for tree, objectives in zip(uniques_trees, unique_objectives):

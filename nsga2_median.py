@@ -33,8 +33,8 @@ from tournament import binary_tournament
 
 from itertools import combinations
 
-POPULATION_SIZE = 50
-GENERATIONS = 10
+POPULATION_SIZE = 100
+GENERATIONS = 100
 
 
 def sanity_check(population):
