@@ -33,8 +33,8 @@ from tournament import binary_tournament
 
 from itertools import combinations
 
-POPULATION_SIZE = 50
-GENERATIONS = 10
+POPULATION_SIZE = 200
+GENERATIONS = 50
 
 
 def sanity_check(population):
@@ -87,7 +87,7 @@ class RandomSlicingTreeSampling(Sampling):
                 for _ in range(n_samples)
             ]
         )
-        sanity_check(X)
+        # sanity_check(X)
 
         return X
 
@@ -110,7 +110,7 @@ class SwapSubtreeCrossover(Crossover):
 
             Y[0, k, 0], Y[1, k, 0] = child1, child2
 
-        sanity_check(Y)
+        # sanity_check(Y)
         return Y
 
 
@@ -120,7 +120,7 @@ class JitterMutation(Mutation):
 
     def _do(self, problem, X, **kwargs):
         # print("Mutation start")
-        sanity_check(X)
+        # sanity_check(X)
         for i in range(len(X)):
             tree = X[i, 0]
             for node in tree.descendants:
@@ -131,7 +131,7 @@ class JitterMutation(Mutation):
                     node.offset = max(0, min(1, node.offset + random.gauss(0, 0.15)))
 
         # print("Mutation end")
-        sanity_check(X)
+        # sanity_check(X)
         return X
 
 
@@ -178,7 +178,7 @@ def run(sheet: npt.NDArray):
     res = minimize(
         problem, algorithm, ("n_gen", GENERATIONS), seed=0xC1FFEE, verbose=True
     )
-    sanity_check(res.X)
+    # sanity_check(res.X)
     # print(res.X.shape)
     # print(x1, x2)
     # print(res.X)

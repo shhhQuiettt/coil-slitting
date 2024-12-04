@@ -26,6 +26,10 @@ class Slit(NodeMixin):
     def __str__(self) -> str:
         return f"{'H' if self.horizontal else 'V'}  {self.offset:.3f}"
 
+    @property
+    def name(self) -> str:
+        return str(self)
+
 
 # class to represent the end node, to know if a subrectangle is left or right
 class EndNode(NodeMixin):
@@ -40,6 +44,10 @@ class EndNode(NodeMixin):
 
     def __str__(self) -> str:
         return f"END{self.count}"
+
+    @property
+    def name(self) -> str:
+        return str(self)
 
 
 @dataclass

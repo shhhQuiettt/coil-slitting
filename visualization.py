@@ -1,6 +1,9 @@
 import numpy as np
+import tempfile
 from pymoo.visualization.scatter import Scatter
+from anytree.exporter import DotExporter
 import matplotlib.pyplot as plt
+from io import BytesIO
 import streamlit as st
 from data import load_data
 import numpy.typing as npt
@@ -35,8 +38,16 @@ def display_cuts_and_objectives(tree: Slit, sheet: npt.NDArray):
     with container:
         col1, col2, col3 = st.columns([3, 5, 2])
         with col1:
-            img_filename = generate_slicing_tree_img_file(tree)
-            st.image(img_filename, use_column_width=True)
+            # img_filename = generate_slicing_tree_img_file(tree)
+            # st.image(img_filename, use_column_width=True)
+            #
+            #
+
+            # save the image to the virtual file
+            with tempfile.NamedTemporaryFile(suffix=".png") as f:
+                DotExporter(tree).to_picture(f.name)
+
+                st.image(f.name, use_column_width=True)
 
         with col2:
             fig = go.Figure()
