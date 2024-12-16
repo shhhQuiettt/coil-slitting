@@ -119,12 +119,12 @@ def split_array(
     if horizontal:
         return (
             sensors[: int(offset * sensors.shape[0])],
-            sensors[int(offset * sensors.shape[0]) :],
+            sensors[int(offset * sensors.shape[0]):],
         )
     else:
         return (
             sensors[:, : int(offset * sensors.shape[1])],
-            sensors[:, int(offset * sensors.shape[1]) :],
+            sensors[:, int(offset * sensors.shape[1]):],
         )
 
 
@@ -136,7 +136,8 @@ def get_rectangles(
     if isinstance(node, EndNode):
         return []
 
-    sensors1, sensors2 = split_array(sensors_sheet, node.offset, node.horizontal)
+    sensors1, sensors2 = split_array(
+        sensors_sheet, node.offset, node.horizontal)
 
     if not node.children:
         return [
@@ -184,11 +185,13 @@ def average_weighted_worst_percentile(
 
     percentiles = np.array(
         [
-            np.percentile(r.sensors, percentile * 100) if r.sensors.size > 0 else 0
+            np.percentile(r.sensors, percentile *
+                          100) if r.sensors.size > 0 else 0
             for r in rectangles
         ]
     )
-    areas = np.array([rectangle.width * rectangle.height for rectangle in rectangles])
+    areas = np.array(
+        [rectangle.width * rectangle.height for rectangle in rectangles])
 
     return np.sum(percentiles * areas) / np.sum(areas)
 
@@ -296,9 +299,39 @@ def plot_slit_sheet(tree: Slit, sheet: npt.NDArray):
     plt.show()
 
 
+def prune_tree(tree: Slit, width: int, height: int, percentage_max_length: float = 0.2) -> Slit:
+    if isinstance(tree, EndNode):
+        return tree
+    if tree is None:
+        return None
+
+    if tree.horizontal:
+        max_length = height * percentage_max_length
+        offset = tree.offset
+        if offset * height > max_length or (1 - offset) * height > max_length:
+            tree.children = [EndNode(), EndNode()]
+        else:
+            prune_tree(tree.children[0], width,
+                       offset * height, percentage_max_length)
+            prune_tree(tree.children[1], width, (1 - offset)
+                       * height, percentage_max_length)
+    else:
+        max_length = width * percentage_max_length
+        offset = tree.offset
+        if offset * width > max_length or (1 - offset) * width > max_length:
+            tree.children = [EndNode(), EndNode()]
+        else:
+            prune_tree(tree.children[0], offset *
+                       width,  height, percentage_max_length)
+            prune_tree(tree.children[1], (1 - offset)
+                       * width,  height, percentage_max_length)
+    return tree
+
+
 if __name__ == "__main__":
     example_tree = generate_random_slitting_tree(5)
     sheet = load_data("./data.csv")[0]
+
     # np.random.seed(1)
     # print(np.random.random((100, 100)))
     # for r in get_rectangles(example_tree, 100, 100, np.random.random((100, 100))):
@@ -312,9 +345,9 @@ if __name__ == "__main__":
     sss = Sheet(sheet)
     sheet = sss.get_sheet()
     display_sheet(sheet)
-    plot_slicing_tree(example_tree)
-    # print(get_rectangles(example_tree, sheet))
+    # plot_slicing_tree(example_tree)
+    # # print(get_rectangles(example_tree, sheet))
 
-    # print(average_weighted_worst_percentile(example_tree, sensors_sheet=sheet))
-    # print(average_rectangle_size(example_tree, sensors_sheet=sheet))
-    plot_slit_sheet(example_tree, sheet)
+    # # print(average_weighted_worst_percentile(example_tree, sensors_sheet=sheet))
+    # # print(average_rectangle_size(example_tree, sensors_sheet=sheet))
+    # plot_slit_sheet(example_tree, sheet)
