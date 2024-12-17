@@ -299,32 +299,36 @@ def plot_slit_sheet(tree: Slit, sheet: npt.NDArray):
     plt.show()
 
 
-def prune_tree(tree: Slit, width: int, height: int, percentage_max_length: float = 0.2) -> Slit:
+def prune_tree(tree: Slit, *, width: int, height: int, min_width: float = 45.5, min_height: float = 2.0) -> Slit:
     if isinstance(tree, EndNode):
         return tree
+
     if tree is None:
         return None
 
     if tree.horizontal:
-        max_length = height * percentage_max_length
+        # min_length = height * percentage_min_length
         offset = tree.offset
-        if offset * height > max_length or (1 - offset) * height > max_length:
+        if offset * height < min_height or (1 - offset) * height < min_height:
             tree.children = [EndNode(), EndNode()]
         else:
-            prune_tree(tree.children[0], width,
-                       offset * height, percentage_max_length)
-            prune_tree(tree.children[1], width, (1 - offset)
-                       * height, percentage_max_length)
+            if len(tree.children) > 0:
+                prune_tree(tree.children[0], width=width, height=offset * height)
+            if len(tree.children) > 1:
+                prune_tree(tree.children[1], width=width,
+                       height=(1 - offset) * height)
     else:
-        max_length = width * percentage_max_length
+        # min_length = width * percentage_min_length
         offset = tree.offset
-        if offset * width > max_length or (1 - offset) * width > max_length:
+        if offset * width < min_width or (1 - offset) * width < min_width:
             tree.children = [EndNode(), EndNode()]
         else:
-            prune_tree(tree.children[0], offset *
-                       width,  height, percentage_max_length)
-            prune_tree(tree.children[1], (1 - offset)
-                       * width,  height, percentage_max_length)
+            if len(tree.children) > 0:
+                prune_tree(tree.children[0], width=offset *
+                       width,  height=height)
+            if len(tree.children) > 1:
+                prune_tree(tree.children[1], width=(1 - offset)
+                       * width,  height=height)
     return tree
 
 
@@ -345,9 +349,13 @@ if __name__ == "__main__":
     sss = Sheet(sheet)
     sheet = sss.get_sheet()
     display_sheet(sheet)
-    # plot_slicing_tree(example_tree)
+    plot_slicing_tree(example_tree)
     # # print(get_rectangles(example_tree, sheet))
 
     # # print(average_weighted_worst_percentile(example_tree, sensors_sheet=sheet))
     # # print(average_rectangle_size(example_tree, sensors_sheet=sheet))
-    # plot_slit_sheet(example_tree, sheet)
+    print(sheet.shape)
+    plot_slit_sheet(example_tree, sheet)
+    prune_tree(example_tree, width=sheet.shape[1], height=sheet.shape[0])
+    plot_slit_sheet(example_tree, sheet)
+    plot_slicing_tree(example_tree)
